@@ -1,8 +1,13 @@
-import pandas as pd
-import numpy as np
-
 import warnings
+from math import sqrt
+
+import numpy as np
+import pandas as pd
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+from sklearn.exceptions import DataConversionWarning
+warnings.filterwarnings(action='ignore', category=DataConversionWarning)
 
 from sklearn import metrics
 
@@ -13,9 +18,16 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_predict
 
 from sklearn.preprocessing import MinMaxScaler
+
+from sklearn.metrics import mean_squared_error
+
+
+def scaler(x):
+    scl = MinMaxScaler()
+    scl.fit(x)
+    return scl.transform(x)
 
 
 def submission(m, x, y):
@@ -35,7 +47,7 @@ def submission(m, x, y):
 
 
 def run_class(m, x, y, linear, **kwargs):
-    x_tr, x_t, y_tr, y_t = train_test_split(x, y)
+    x_tr, x_t, y_tr, y_t = train_test_split(x, y, test_size=.3)
     print(m.__module__)
     if m.__module__ == 'sklearn.ensemble.forest':
         out = m(class_weight='balanced').fit(x_tr, np.ravel(y_tr))
@@ -48,7 +60,8 @@ def run_class(m, x, y, linear, **kwargs):
         accuracy = metrics.accuracy_score(y_t, y_hat)
         print('Accuracy: {:.04f}'.format(accuracy))
     else:
-        print('Coeficiente de determinação: {:.4f}'.format(out.score(x, y)))
+        print('Coeficiente de determinação: {:.2f}'.format(out.score(x, y)))
+        print('Root mean squared error: {:,.2f}'.format(sqrt(mean_squared_error(y_t, y_hat))))
 
 
 def main(x, y):
@@ -73,8 +86,10 @@ def run_single(m, x, y, a, b, v):
 if __name__ == '__main__':
     X = pd.read_csv('X')
     Y = pd.read_csv('Y')
-    # main(X, Y)
+    X = scaler(X)
+    main(X, Y)
 
     # run_single(SVC, X, Y, 2, 10, 'gamma')
     # run_class(DecisionTreeRegressor, X, Y, False)
-    submission(DecisionTreeRegressor, X, Y)
+    # run_class(LinearRegression, X, Y, False)
+    submission(LinearRegression, X, Y)
